@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "title": "motorola",
+    "description": "motorola G32 modelo 2022",
+    "code": "001",
+    "price": 100000,
+    "status": true,
+    "stock": 2,
+    "category": "celulares",
+    "thumbnails": []
+  },
+  {
+    "id": 2,
+    "title": "iphone ",
+    "description": "iphone 15 pro max modelo 2024",
+    "code": "002",
+    "price": 200000,
+    "status": true,
+    "stock": 22,
+    "category": "celulares",
+    "thumbnails": []
+  }
+]

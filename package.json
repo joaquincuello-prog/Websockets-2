@@ -1,0 +1,22 @@
+{
+  "name": "backend-coderhouse-entrega1-y-2",
+  "version": "1.0.0",
+  "description": "Primera y segunda entrega - API + WebSockets",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "keywords": ["backend", "express", "api", "ecommerce", "websockets", "handlebars"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-handlebars": "^7.1.2",
+    "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

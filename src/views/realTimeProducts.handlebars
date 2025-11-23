@@ -1,0 +1,178 @@
+<h1>⚡ Productos en Tiempo Real</h1>
+
+<form id="productForm">
+  <h2> Agregar Nuevo Producto</h2>
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label for="title">Título *</label>
+      <input type="text" id="title" name="title" required placeholder="Ej: iPhone 14">
+    </div>
+    
+    <div class="form-group">
+      <label for="code">Código *</label>
+      <input type="text" id="code" name="code" required placeholder="Ej: PROD001">
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="description">Descripción *</label>
+    <textarea id="description" name="description" required placeholder="Describe el producto..."></textarea>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label for="price">Precio *</label>
+      <input type="number" id="price" name="price" step="0.01" required placeholder="0.00">
+    </div>
+    
+    <div class="form-group">
+      <label for="stock">Stock *</label>
+      <input type="number" id="stock" name="stock" required placeholder="0">
+    </div>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label for="category">Categoría *</label>
+      <input type="text" id="category" name="category" required placeholder="Ej: Electrónica">
+    </div>
+    
+    <div class="form-group">
+      <label for="status">Estado</label>
+      <select id="status" name="status">
+        <option value="true">Activo</option>
+        <option value="false">Inactivo</option>
+      </select>
+    </div>
+  </div>
+  
+  <button type="submit" class="btn-submit"> Agregar Producto</button>
+</form>
+
+<div id="productList" class="product-grid">
+  {{#if products.length}}
+    {{#each products}}
+      <div class="product-card" data-id="{{this.id}}">
+        <div class="product-title">{{this.title}}</div>
+        <div class="product-description">{{this.description}}</div>
+        <div class="product-price">${{this.price}}</div>
+        <div class="product-info">
+          <span class="product-code">{{this.code}}</span>
+          <span>Stock: {{this.stock}}</span>
+        </div>
+        <div class="product-info">
+          <span>Categoría: {{this.category}}</span>
+          <span class="product-status {{#if this.status}}status-active{{else}}status-inactive{{/if}}">
+            {{#if this.status}}✓ Activo{{else}}✗ Inactivo{{/if}}
+          </span>
+        </div>
+        <button class="btn-delete" onclick="deleteProduct({{this.id}})">🗑️ Eliminar</button>
+      </div>
+    {{/each}}
+  {{else}}
+    <div class="empty-message">
+      📭 No hay productos disponibles
+    </div>
+  {{/if}}
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  //WEBSOCKET: Escuchar actualizaciones de productos desde el servidor
+  socket.on('updateProducts', (products) => {
+    console.log('📡 Productos actualizados:', products);
+    renderProducts(products);
+  });
+
+  //Manejar el envío del formulario
+  document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      title: document.getElementById('title').value,
+      description: document.getElementById('description').value,
+      code: document.getElementById('code').value,
+      price: parseFloat(document.getElementById('price').value),
+      stock: parseInt(document.getElementById('stock').value),
+      category: document.getElementById('category').value,
+      status: document.getElementById('status').value === 'true'
+    };
+
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        // Limpiar el formulario
+        document.getElementById('productForm').reset();
+        alert('✅ Producto agregado exitosamente');
+      } else {
+        alert('❌ Error: ' + data.message);
+      }
+    } catch (error) {
+      alert('❌ Error al agregar el producto: ' + error.message);
+    }
+  });
+
+  // Función para eliminar un producto
+  async function deleteProduct(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        alert('✅ Producto eliminado exitosamente');
+      } else {
+        alert('❌ Error: ' + data.message);
+      }
+    } catch (error) {
+      alert('❌ Error al eliminar el producto: ' + error.message);
+    }
+  }
+
+  //Función para renderizar la lista de productos (actualización en tiempo real)
+  function renderProducts(products) {
+    const productList = document.getElementById('productList');
+
+    if (products.length === 0) {
+      productList.innerHTML = '<div class="empty-message">📭 No hay productos disponibles</div>';
+      return;
+    }
+
+    productList.innerHTML = products.map(product => `
+      <div class="product-card" data-id="${product.id}">
+        <div class="product-title">${product.title}</div>
+        <div class="product-description">${product.description}</div>
+        <div class="product-price">$${product.price}</div>
+        <div class="product-info">
+          <span class="product-code">${product.code}</span>
+          <span>Stock: ${product.stock}</span>
+        </div>
+        <div class="product-info">
+          <span>Categoría: ${product.category}</span>
+          <span class="product-status ${product.status ? 'status-active' : 'status-inactive'}">
+            ${product.status ? '✓ Activo' : '✗ Inactivo'}
+          </span>
+        </div>
+        <button class="btn-delete" onclick="deleteProduct(${product.id})">🗑️ Eliminar</button>
+      </div>
+    `).join('');
+  }
+</script>

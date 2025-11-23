@@ -1,0 +1,38 @@
+<h1>📦 Lista de Productos</h1>
+
+{{#if error}}
+  <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    ⚠️ {{error}}
+  </div>
+{{/if}}
+
+{{#if products.length}}
+  <div class="product-grid">
+    {{#each products}}
+      <div class="product-card">
+        <div class="product-title">{{this.title}}</div>
+        <div class="product-description">{{this.description}}</div>
+        <div class="product-price">${{this.price}}</div>
+        <div class="product-info">
+          <span class="product-code">{{this.code}}</span>
+          <span>Stock: {{this.stock}}</span>
+        </div>
+        <div class="product-info">
+          <span>Categoría: {{this.category}}</span>
+          <span class="product-status {{#if this.status}}status-active{{else}}status-inactive{{/if}}">
+            {{#if this.status}}✓ Activo{{else}}✗ Inactivo{{/if}}
+          </span>
+        </div>
+        {{#if this.thumbnails.length}}
+          <div class="product-info">
+            <small>📷 {{this.thumbnails.length}} imagen(es)</small>
+          </div>
+        {{/if}}
+      </div>
+    {{/each}}
+  </div>
+{{else}}
+  <div class="empty-message">
+    📭 No hay productos disponibles
+  </div>
+{{/if}}
