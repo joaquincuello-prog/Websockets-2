@@ -3,15 +3,19 @@ import productManager from '../managers/ProductManager.js';
 
 const router = Router();
 
-// GET /api/products - Listar todos los productos (con límite opcional)
+// GET /api/products - Listar productos con paginación profesional
 router.get('/', async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
-    const products = await productManager.getProducts(limit);
-    res.json({
-      status: 'success',
-      payload: products
+    const { limit, page, sort, query } = req.query;
+    
+    const result = await productManager.getProducts({
+      limit,
+      page,
+      sort,
+      query
     });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({
       status: 'error',
@@ -23,8 +27,7 @@ router.get('/', async (req, res) => {
 // GET /api/products/:pid - Obtener producto por ID
 router.get('/:pid', async (req, res) => {
   try {
-    const productId = parseInt(req.params.pid);
-    const product = await productManager.getProductById(productId);
+    const product = await productManager.getProductById(req.params.pid);
     res.json({
       status: 'success',
       payload: product
@@ -42,11 +45,10 @@ router.post('/', async (req, res) => {
   try {
     const newProduct = await productManager.addProduct(req.body);
     
-    // ⭐ CONEXIÓN HTTP CON WEBSOCKET ⭐
     // Emitir evento de WebSocket para actualizar la vista en tiempo real
     const io = req.app.get('io');
-    const products = await productManager.getProducts();
-    io.emit('updateProducts', products);
+    const products = await productManager.getProducts({ limit: 100 });
+    io.emit('updateProducts', products.payload);
     
     res.status(201).json({
       status: 'success',
@@ -63,13 +65,12 @@ router.post('/', async (req, res) => {
 // PUT /api/products/:pid - Actualizar producto
 router.put('/:pid', async (req, res) => {
   try {
-    const productId = parseInt(req.params.pid);
-    const updatedProduct = await productManager.updateProduct(productId, req.body);
+    const updatedProduct = await productManager.updateProduct(req.params.pid, req.body);
     
-    // ⭐ CONEXIÓN HTTP CON WEBSOCKET ⭐
+    // Emitir evento de WebSocket
     const io = req.app.get('io');
-    const products = await productManager.getProducts();
-    io.emit('updateProducts', products);
+    const products = await productManager.getProducts({ limit: 100 });
+    io.emit('updateProducts', products.payload);
     
     res.json({
       status: 'success',
@@ -86,14 +87,12 @@ router.put('/:pid', async (req, res) => {
 // DELETE /api/products/:pid - Eliminar producto
 router.delete('/:pid', async (req, res) => {
   try {
-    const productId = parseInt(req.params.pid);
-    const deletedProduct = await productManager.deleteProduct(productId);
+    const deletedProduct = await productManager.deleteProduct(req.params.pid);
     
-    // ⭐ CONEXIÓN HTTP CON WEBSOCKET ⭐
-    // Emitir evento de WebSocket para actualizar la vista en tiempo real
+    // Emitir evento de WebSocket
     const io = req.app.get('io');
-    const products = await productManager.getProducts();
-    io.emit('updateProducts', products);
+    const products = await productManager.getProducts({ limit: 100 });
+    io.emit('updateProducts', products.payload);
     
     res.json({
       status: 'success',

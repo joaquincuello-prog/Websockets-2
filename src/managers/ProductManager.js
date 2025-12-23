@@ -1,131 +1,129 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { ProductModel } from '../models/product.model.js';
 
 class ProductManager {
-  constructor() {
-    this.path = path.join(__dirname, '../data/products.json');
-    this.products = [];
-    this.init();
-  }
-
-  async init() {
+  // GET / con paginación profesional
+  async getProducts({ limit = 10, page = 1, sort, query } = {}) {
     try {
-      await this.loadProducts();
+      // Construir filtro de búsqueda
+      const filter = {};
+      
+      if (query) {
+        // Búsqueda por categoría o disponibilidad
+        if (query.includes('category:')) {
+          const category = query.split(':')[1];
+          filter.category = { $regex: category, $options: 'i' };
+        } else if (query === 'available') {
+          filter.status = true;
+          filter.stock = { $gt: 0 };
+        } else if (query === 'unavailable') {
+          filter.$or = [
+            { status: false },
+            { stock: 0 }
+          ];
+        }
+      }
+
+      // Construir opciones de ordenamiento
+      const sortOptions = {};
+      if (sort === 'asc') {
+        sortOptions.price = 1;
+      } else if (sort === 'desc') {
+        sortOptions.price = -1;
+      }
+
+      // Opciones de paginación
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sort: sortOptions,
+        lean: true
+      };
+
+      const result = await ProductModel.paginate(filter, options);
+
+      // Construir respuesta con formato requerido
+      return {
+        status: 'success',
+        payload: result.docs,
+        totalPages: result.totalPages,
+        prevPage: result.prevPage,
+        nextPage: result.nextPage,
+        page: result.page,
+        hasPrevPage: result.hasPrevPage,
+        hasNextPage: result.hasNextPage,
+        prevLink: result.hasPrevPage ? `/api/products?page=${result.prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}` : null,
+        nextLink: result.hasNextPage ? `/api/products?page=${result.nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}` : null
+      };
     } catch (error) {
-      // Si el archivo no existe, lo creamos vacío
-      await this.saveProducts();
+      throw new Error('Error al obtener productos: ' + error.message);
     }
-  }
-
-  async loadProducts() {
-    const data = await fs.readFile(this.path, 'utf-8');
-    this.products = JSON.parse(data);
-  }
-
-  async saveProducts() {
-    const dirPath = path.dirname(this.path);
-    await fs.mkdir(dirPath, { recursive: true });
-    await fs.writeFile(this.path, JSON.stringify(this.products, null, 2));
-  }
-
-  // GET / - Listar todos los productos
-  async getProducts(limit) {
-    await this.loadProducts();
-    if (limit) {
-      return this.products.slice(0, limit);
-    }
-    return this.products;
   }
 
   // GET /:pid - Obtener producto por ID
   async getProductById(id) {
-    await this.loadProducts();
-    const product = this.products.find(p => p.id === id);
-    if (!product) {
-      throw new Error(`Producto con id ${id} no encontrado`);
+    try {
+      const product = await ProductModel.findById(id);
+      if (!product) {
+        throw new Error(`Producto con id ${id} no encontrado`);
+      }
+      return product;
+    } catch (error) {
+      throw new Error(error.message);
     }
-    return product;
   }
 
   // POST / - Agregar nuevo producto
   async addProduct(productData) {
-    await this.loadProducts();
-
-    // Validar campos obligatorios
-    const requiredFields = ['title', 'description', 'code', 'price', 'stock', 'category'];
-    for (const field of requiredFields) {
-      if (productData[field] === undefined || productData[field] === null || productData[field] === '') {
-        throw new Error(`El campo ${field} es obligatorio`);
+    try {
+      // Verificar si el código ya existe
+      const existingProduct = await ProductModel.findOne({ code: productData.code });
+      if (existingProduct) {
+        throw new Error(`Ya existe un producto con el código ${productData.code}`);
       }
+
+      const newProduct = await ProductModel.create(productData);
+      return newProduct;
+    } catch (error) {
+      throw new Error(error.message);
     }
-
-    // Verificar que el código no esté repetido
-    const codeExists = this.products.some(p => p.code === productData.code);
-    if (codeExists) {
-      throw new Error(`Ya existe un producto con el código ${productData.code}`);
-    }
-
-    // Generar ID autoincrementable
-    const newId = this.products.length > 0 
-      ? Math.max(...this.products.map(p => p.id)) + 1 
-      : 1;
-
-    // Crear el nuevo producto con todos los campos
-    const newProduct = {
-      id: newId,
-      title: productData.title,
-      description: productData.description,
-      code: productData.code,
-      price: parseFloat(productData.price),
-      status: productData.status !== undefined ? productData.status : true,
-      stock: parseInt(productData.stock),
-      category: productData.category,
-      thumbnails: Array.isArray(productData.thumbnails) ? productData.thumbnails : []
-    };
-
-    this.products.push(newProduct);
-    await this.saveProducts();
-    return newProduct;
   }
 
   // PUT /:pid - Actualizar producto
   async updateProduct(id, updates) {
-    await this.loadProducts();
-    const index = this.products.findIndex(p => p.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Producto con id ${id} no encontrado`);
+    try {
+      // No permitir actualizar el ID ni el código
+      delete updates._id;
+      delete updates.code;
+
+      const updatedProduct = await ProductModel.findByIdAndUpdate(
+        id,
+        updates,
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedProduct) {
+        throw new Error(`Producto con id ${id} no encontrado`);
+      }
+
+      return updatedProduct;
+    } catch (error) {
+      throw new Error(error.message);
     }
-
-    // No permitir actualizar el ID
-    delete updates.id;
-
-    // Actualizar el producto manteniendo el ID original
-    this.products[index] = {
-      ...this.products[index],
-      ...updates
-    };
-
-    await this.saveProducts();
-    return this.products[index];
   }
 
   // DELETE /:pid - Eliminar producto
   async deleteProduct(id) {
-    await this.loadProducts();
-    const index = this.products.findIndex(p => p.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Producto con id ${id} no encontrado`);
-    }
+    try {
+      const deletedProduct = await ProductModel.findByIdAndDelete(id);
+      
+      if (!deletedProduct) {
+        throw new Error(`Producto con id ${id} no encontrado`);
+      }
 
-    const deletedProduct = this.products.splice(index, 1)[0];
-    await this.saveProducts();
-    return deletedProduct;
+      return deletedProduct;
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 }
 

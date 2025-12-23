@@ -1,0 +1,153 @@
+<h1>🛍️ Catálogo de Productos</h1>
+
+{{#if error}}
+  <div class="error-message">
+    ⚠️ {{error}}
+  </div>
+{{/if}}
+
+<!-- Filtros y búsqueda -->
+<form class="filters" method="GET" action="/products">
+  <div class="filter-group">
+    <label for="query">Buscar por:</label>
+    <select name="query" id="query">
+      <option value="">Todos los productos</option>
+      <option value="available" {{#if (eq currentQuery 'available')}}selected{{/if}}>Disponibles</option>
+      <option value="unavailable" {{#if (eq currentQuery 'unavailable')}}selected{{/if}}>No disponibles</option>
+      <option value="category:Electrónica" {{#if (eq currentQuery 'category:Electrónica')}}selected{{/if}}>Electrónica</option>
+      <option value="category:Ropa" {{#if (eq currentQuery 'category:Ropa')}}selected{{/if}}>Ropa</option>
+      <option value="category:Hogar" {{#if (eq currentQuery 'category:Hogar')}}selected{{/if}}>Hogar</option>
+      <option value="category:Deportes" {{#if (eq currentQuery 'category:Deportes')}}selected{{/if}}>Deportes</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="sort">Ordenar por precio:</label>
+    <select name="sort" id="sort">
+      <option value="">Sin ordenar</option>
+      <option value="asc" {{#if (eq currentSort 'asc')}}selected{{/if}}>Menor a mayor</option>
+      <option value="desc" {{#if (eq currentSort 'desc')}}selected{{/if}}>Mayor a menor</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="limit">Productos por página:</label>
+    <select name="limit" id="limit">
+      <option value="5" {{#if (eq currentLimit '5')}}selected{{/if}}>5</option>
+      <option value="10" {{#if (eq currentLimit '10')}}selected{{/if}}>10</option>
+      <option value="20" {{#if (eq currentLimit '20')}}selected{{/if}}>20</option>
+      <option value="50" {{#if (eq currentLimit '50')}}selected{{/if}}>50</option>
+    </select>
+  </div>
+
+  <button type="submit" class="btn-filter">🔍 Aplicar Filtros</button>
+</form>
+
+<!-- Grid de productos -->
+{{#if products.length}}
+  <div class="product-grid">
+    {{#each products}}
+      <div class="product-card">
+        <div class="product-title">{{this.title}}</div>
+        <div class="product-description">{{this.description}}</div>
+        <div class="product-price">${{this.price}}</div>
+        
+        <div class="product-info">
+          <span class="product-code">{{this.code}}</span>
+          <span>Stock: {{this.stock}}</span>
+        </div>
+        
+        <div class="product-info">
+          <span>{{this.category}}</span>
+          <span class="product-status {{#if this.status}}status-active{{else}}status-inactive{{/if}}">
+            {{#if this.status}}✓ Activo{{else}}✗ Inactivo{{/if}}
+          </span>
+        </div>
+
+        <!-- Botones de acción -->
+        <a href="/products/{{this._id}}" class="btn btn-primary btn-block">
+          👁️ Ver Detalles
+        </a>
+        
+        {{#if this.status}}
+          {{#if (gt this.stock 0)}}
+            <button class="btn btn-success btn-block" onclick="addToCart('{{this._id}}')">
+              🛒 Agregar al Carrito
+            </button>
+          {{else}}
+            <button class="btn btn-block" style="background: #6c757d; color: white; cursor: not-allowed;" disabled>
+              Sin Stock
+            </button>
+          {{/if}}
+        {{/if}}
+      </div>
+    {{/each}}
+  </div>
+
+  <!-- Paginación -->
+  <div class="pagination">
+    {{#if hasPrevPage}}
+      <a href="{{prevLink}}">⬅️ Anterior</a>
+    {{else}}
+      <span class="disabled">⬅️ Anterior</span>
+    {{/if}}
+
+    <span class="active">Página {{page}} de {{totalPages}}</span>
+
+    {{#if hasNextPage}}
+      <a href="{{nextLink}}">Siguiente ➡️</a>
+    {{else}}
+      <span class="disabled">Siguiente ➡️</span>
+    {{/if}}
+  </div>
+
+  <!-- Indicador de páginas -->
+  <div style="text-align: center; margin-top: 15px; color: #666;">
+    Mostrando {{products.length}} productos
+  </div>
+
+{{else}}
+  <div class="empty-message">
+    📭 No hay productos disponibles con los filtros seleccionados
+  </div>
+{{/if}}
+
+<script>
+  // Función para agregar al carrito
+  async function addToCart(productId) {
+    try {
+      // Obtener o crear carrito
+      let cartId = localStorage.getItem('cartId');
+      
+      if (!cartId) {
+        // Crear un nuevo carrito
+        const createResponse = await fetch('/api/carts', {
+          method: 'POST'
+        });
+        const createData = await createResponse.json();
+        cartId = createData.payload._id;
+        localStorage.setItem('cartId', cartId);
+      }
+
+      // Agregar producto al carrito
+      const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        alert('✅ Producto agregado al carrito');
+        
+        // Preguntar si quiere ver el carrito
+        if (confirm('¿Deseas ver tu carrito?')) {
+          window.location.href = `/carts/${cartId}`;
+        }
+      } else {
+        alert('❌ Error: ' + data.message);
+      }
+    } catch (error) {
+      alert('❌ Error al agregar producto: ' + error.message);
+    }
+  }
+</script>

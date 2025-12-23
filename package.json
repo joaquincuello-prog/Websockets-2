@@ -1,20 +1,22 @@
 {
-  "name": "backend-coderhouse-entrega1-y-2",
+  "name": "backend-coderhouse-entrega-final",
   "version": "1.0.0",
-  "description": "Primera y segunda entrega - API + WebSockets",
+  "description": "Entrega Final - MongoDB + Paginación + Carritos avanzados",
   "main": "src/app.js",
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js"
   },
-  "keywords": ["backend", "express", "api", "ecommerce", "websockets", "handlebars"],
+  "keywords": ["backend", "express", "mongodb", "mongoose", "websockets", "handlebars"],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
     "express-handlebars": "^7.1.2",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "mongoose": "^8.0.3",
+    "mongoose-paginate-v2": "^1.8.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -1,9 +1,9 @@
 <h1>⚡ Productos en Tiempo Real</h1>
 
 <form id="productForm">
-  <h2> Agregar Nuevo Producto</h2>
+  <h2>➕ Agregar Nuevo Producto</h2>
   
-  <div class="form-row">
+  <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
     <div class="form-group">
       <label for="title">Título *</label>
       <input type="text" id="title" name="title" required placeholder="Ej: iPhone 14">
@@ -17,10 +17,10 @@
   
   <div class="form-group">
     <label for="description">Descripción *</label>
-    <textarea id="description" name="description" required placeholder="Describe el producto..."></textarea>
+    <textarea id="description" name="description" required placeholder="Describe el producto..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 80px;"></textarea>
   </div>
   
-  <div class="form-row">
+  <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
     <div class="form-group">
       <label for="price">Precio *</label>
       <input type="number" id="price" name="price" step="0.01" required placeholder="0.00">
@@ -32,7 +32,7 @@
     </div>
   </div>
   
-  <div class="form-row">
+  <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
     <div class="form-group">
       <label for="category">Categoría *</label>
       <input type="text" id="category" name="category" required placeholder="Ej: Electrónica">
@@ -40,20 +40,22 @@
     
     <div class="form-group">
       <label for="status">Estado</label>
-      <select id="status" name="status">
+      <select id="status" name="status" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
         <option value="true">Activo</option>
         <option value="false">Inactivo</option>
       </select>
     </div>
   </div>
   
-  <button type="submit" class="btn-submit"> Agregar Producto</button>
+  <button type="submit" class="btn btn-success btn-block" style="margin-top: 15px; font-size: 16px; padding: 12px;">
+    ➕ Agregar Producto
+  </button>
 </form>
 
-<div id="productList" class="product-grid">
+<div id="productList" class="product-grid" style="margin-top: 30px;">
   {{#if products.length}}
     {{#each products}}
-      <div class="product-card" data-id="{{this.id}}">
+      <div class="product-card" data-id="{{this._id}}">
         <div class="product-title">{{this.title}}</div>
         <div class="product-description">{{this.description}}</div>
         <div class="product-price">${{this.price}}</div>
@@ -62,12 +64,14 @@
           <span>Stock: {{this.stock}}</span>
         </div>
         <div class="product-info">
-          <span>Categoría: {{this.category}}</span>
+          <span>{{this.category}}</span>
           <span class="product-status {{#if this.status}}status-active{{else}}status-inactive{{/if}}">
             {{#if this.status}}✓ Activo{{else}}✗ Inactivo{{/if}}
           </span>
         </div>
-        <button class="btn-delete" onclick="deleteProduct({{this.id}})">🗑️ Eliminar</button>
+        <button class="btn btn-danger btn-block" onclick="deleteProduct('{{this._id}}')">
+          🗑️ Eliminar
+        </button>
       </div>
     {{/each}}
   {{else}}
@@ -81,13 +85,11 @@
 <script>
   const socket = io();
 
-  //WEBSOCKET: Escuchar actualizaciones de productos desde el servidor
   socket.on('updateProducts', (products) => {
     console.log('📡 Productos actualizados:', products);
     renderProducts(products);
   });
 
-  //Manejar el envío del formulario
   document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -113,7 +115,6 @@
       const data = await response.json();
 
       if (data.status === 'success') {
-        // Limpiar el formulario
         document.getElementById('productForm').reset();
         alert('✅ Producto agregado exitosamente');
       } else {
@@ -124,7 +125,6 @@
     }
   });
 
-  // Función para eliminar un producto
   async function deleteProduct(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
       return;
@@ -147,7 +147,6 @@
     }
   }
 
-  //Función para renderizar la lista de productos (actualización en tiempo real)
   function renderProducts(products) {
     const productList = document.getElementById('productList');
 
@@ -157,7 +156,7 @@
     }
 
     productList.innerHTML = products.map(product => `
-      <div class="product-card" data-id="${product.id}">
+      <div class="product-card" data-id="${product._id}">
         <div class="product-title">${product.title}</div>
         <div class="product-description">${product.description}</div>
         <div class="product-price">$${product.price}</div>
@@ -166,13 +165,50 @@
           <span>Stock: ${product.stock}</span>
         </div>
         <div class="product-info">
-          <span>Categoría: ${product.category}</span>
+          <span>${product.category}</span>
           <span class="product-status ${product.status ? 'status-active' : 'status-inactive'}">
             ${product.status ? '✓ Activo' : '✗ Inactivo'}
           </span>
         </div>
-        <button class="btn-delete" onclick="deleteProduct(${product.id})">🗑️ Eliminar</button>
+        <button class="btn btn-danger btn-block" onclick="deleteProduct('${product._id}')">
+          🗑️ Eliminar
+        </button>
       </div>
     `).join('');
   }
 </script>
+
+<style>
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+
+  form {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
