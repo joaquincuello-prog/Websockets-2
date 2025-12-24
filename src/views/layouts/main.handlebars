@@ -43,20 +43,53 @@
       margin-bottom: 30px;
       justify-content: center;
       flex-wrap: wrap;
+      align-items: center;
     }
 
-    .nav a {
-      padding: 10px 20px;
+    .nav a, .nav button {
+      padding: 12px 24px;
       background: #667eea;
       color: white;
       text-decoration: none;
-      border-radius: 5px;
-      transition: background 0.3s;
+      border-radius: 8px;
+      transition: background 0.3s, transform 0.2s;
       font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .nav a:hover {
+    .nav a:hover, .nav button:hover {
       background: #764ba2;
+      transform: translateY(-2px);
+    }
+
+    .nav .cart-btn {
+      background: #28a745;
+      position: relative;
+    }
+
+    .nav .cart-btn:hover {
+      background: #218838;
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
     }
 
     .filters {
@@ -273,7 +306,8 @@
     }
 
     .cart-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
       gap: 20px;
       padding: 20px;
       border: 1px solid #e0e0e0;
@@ -283,37 +317,79 @@
       align-items: center;
     }
 
+    .cart-item-image {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 36px;
+    }
+
     .cart-item-info {
-      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .cart-item-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       color: #333;
-      margin-bottom: 5px;
     }
 
-    .cart-item-price {
-      font-size: 20px;
+    .cart-item-description {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .cart-item-details {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .cart-detail-item {
+      background: white;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .cart-detail-label {
+      font-weight: 600;
+      color: #555;
+    }
+
+    .cart-detail-value {
       color: #667eea;
       font-weight: bold;
     }
 
-    .cart-item-quantity {
-      font-size: 16px;
-      color: #666;
+    .cart-item-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 120px;
     }
 
     .cart-total {
       text-align: right;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
       color: #667eea;
       margin-top: 20px;
-      padding: 20px;
+      padding: 25px;
       background: #f8f9fa;
       border-radius: 8px;
+      border: 2px solid #667eea;
     }
 
     .error-message {
@@ -323,6 +399,158 @@
       border-radius: 5px;
       margin-bottom: 20px;
       text-align: center;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: #667eea;
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .modal-product-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .modal-product-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .modal-product-price {
+      font-size: 24px;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .quantity-selector {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .quantity-selector label {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quantity-btn {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .quantity-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    .quantity-input {
+      width: 80px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      padding: 8px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .modal-total {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .modal-total-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .modal-total-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-footer button {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
     }
 
     @media (max-width: 768px) {
@@ -337,6 +565,19 @@
       .filter-group {
         width: 100%;
       }
+
+      .cart-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .cart-item-image {
+        margin: 0 auto;
+      }
+
+      .cart-item-actions {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -345,9 +586,69 @@
     <nav class="nav">
       <a href="/products">🏪 Productos</a>
       <a href="/realtimeproducts">⚡ Tiempo Real</a>
+      <button class="cart-btn" onclick="goToCart()">
+        🛒 Mi Carrito
+        <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+      </button>
     </nav>
     
     {{{body}}}
   </div>
+
+  <script>
+    // Función global para ir al carrito
+    function goToCart() {
+      const cartId = localStorage.getItem('cartId');
+      if (cartId) {
+        window.location.href = `/carts/${cartId}`;
+      } else {
+        if (confirm('No tienes un carrito aún. ¿Deseas crear uno?')) {
+          createCart();
+        }
+      }
+    }
+
+    // Crear carrito
+    async function createCart() {
+      try {
+        const response = await fetch('/api/carts', {
+          method: 'POST'
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          localStorage.setItem('cartId', data.payload._id);
+          window.location.href = `/carts/${data.payload._id}`;
+        }
+      } catch (error) {
+        alert('Error al crear carrito: ' + error.message);
+      }
+    }
+
+    // Actualizar badge del carrito
+    async function updateCartBadge() {
+      const cartId = localStorage.getItem('cartId');
+      if (cartId) {
+        try {
+          const response = await fetch(`/api/carts/${cartId}`);
+          const data = await response.json();
+          if (data.status === 'success') {
+            const totalItems = data.payload.products.reduce((sum, item) => sum + item.quantity, 0);
+            const badge = document.getElementById('cartBadge');
+            if (totalItems > 0) {
+              badge.textContent = totalItems;
+              badge.style.display = 'flex';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        } catch (error) {
+          console.error('Error al actualizar badge:', error);
+        }
+      }
+    }
+
+    // Actualizar badge al cargar la página
+    updateCartBadge();
+  </script>
 </body>
 </html>

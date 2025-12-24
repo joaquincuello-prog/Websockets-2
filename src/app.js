@@ -26,6 +26,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const hbs = handlebars.create({
   helpers: {
     eq: (a, b) => a === b,
+    gt: (a, b) => a > b,        // ⭐ Helper para "greater than"
+    lt: (a, b) => a < b,        // ⭐ Helper para "less than" (por si acaso)
     multiply: (a, b) => a * b,
     range: (start, end) => {
       const result = [];

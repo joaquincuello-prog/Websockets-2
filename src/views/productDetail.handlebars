@@ -2,12 +2,12 @@
   <a href="/products" class="btn btn-primary">⬅️ Volver a Productos</a>
 </div>
 
-<div style="max-width: 900px; margin: 0 auto;">
+<div style="max-width: 1000px; margin: 0 auto;">
   <h1>{{product.title}}</h1>
 
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px;">
     
-    <!-- Columna izquierda: Imagen (placeholder) -->
+    <!-- Columna izquierda: Imagen -->
     <div>
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 400px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
         {{#if product.thumbnails.length}}
@@ -73,14 +73,9 @@
       <!-- Botón de agregar al carrito -->
       {{#if product.status}}
         {{#if (gt product.stock 0)}}
-          <button class="btn btn-success btn-block" onclick="addToCart('{{product._id}}')" style="font-size: 18px; padding: 15px;">
+          <button class="btn btn-success btn-block" onclick="openAddToCartModal('{{product._id}}', '{{product.title}}', {{product.price}}, {{product.stock}})" style="font-size: 18px; padding: 15px;">
             🛒 Agregar al Carrito
           </button>
-          
-          <div style="margin-top: 15px;">
-            <label for="quantity" style="display: block; margin-bottom: 8px; font-weight: 600;">Cantidad:</label>
-            <input type="number" id="quantity" min="1" max="{{product.stock}}" value="1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
-          </div>
         {{else}}
           <button class="btn btn-block" style="background: #dc3545; color: white; cursor: not-allowed; font-size: 18px; padding: 15px;" disabled>
             ❌ Sin Stock
@@ -99,17 +94,93 @@
   </div>
 </div>
 
-<script>
-  async function addToCart(productId) {
-    try {
-      const quantity = parseInt(document.getElementById('quantity').value);
-      
-      if (quantity < 1) {
-        alert('❌ La cantidad debe ser al menos 1');
-        return;
-      }
+<!-- Modal para agregar al carrito -->
+<div id="addToCartModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🛒 Agregar al Carrito</h2>
+    </div>
+    <div class="modal-body">
+      <div class="modal-product-info">
+        <div class="modal-product-title" id="modalProductTitle"></div>
+        <div class="modal-product-price" id="modalProductPrice"></div>
+      </div>
 
-      // Obtener o crear carrito
+      <div class="quantity-selector">
+        <label>Cantidad:</label>
+        <div class="quantity-controls">
+          <button type="button" class="quantity-btn" onclick="decreaseQuantity()">-</button>
+          <input type="number" id="quantityInput" class="quantity-input" value="1" min="1" readonly>
+          <button type="button" class="quantity-btn" onclick="increaseQuantity()">+</button>
+        </div>
+      </div>
+
+      <div class="modal-total">
+        <div class="modal-total-label">Total a agregar:</div>
+        <div class="modal-total-value" id="modalTotal">$0</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="closeAddToCartModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmAddToCart()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentProduct = null;
+  let maxStock = 0;
+  let unitPrice = 0;
+
+  function openAddToCartModal(productId, title, price, stock) {
+    currentProduct = productId;
+    maxStock = stock;
+    unitPrice = price;
+
+    document.getElementById('modalProductTitle').textContent = title;
+    document.getElementById('modalProductPrice').textContent = `$${price}`;
+    document.getElementById('quantityInput').value = 1;
+    document.getElementById('quantityInput').max = stock;
+    updateModalTotal();
+
+    document.getElementById('addToCartModal').classList.add('active');
+  }
+
+  function closeAddToCartModal() {
+    document.getElementById('addToCartModal').classList.remove('active');
+    currentProduct = null;
+  }
+
+  function increaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    const current = parseInt(input.value);
+    if (current < maxStock) {
+      input.value = current + 1;
+      updateModalTotal();
+    } else {
+      alert(`⚠️ Stock máximo disponible: ${maxStock}`);
+    }
+  }
+
+  function decreaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    const current = parseInt(input.value);
+    if (current > 1) {
+      input.value = current - 1;
+      updateModalTotal();
+    }
+  }
+
+  function updateModalTotal() {
+    const quantity = parseInt(document.getElementById('quantityInput').value);
+    const total = unitPrice * quantity;
+    document.getElementById('modalTotal').textContent = `$${total.toFixed(2)}`;
+  }
+
+  async function confirmAddToCart() {
+    const quantity = parseInt(document.getElementById('quantityInput').value);
+    
+    try {
       let cartId = localStorage.getItem('cartId');
       
       if (!cartId) {
@@ -121,13 +192,13 @@
         localStorage.setItem('cartId', cartId);
       }
 
-      // Agregar producto al carrito la cantidad de veces indicada
       for (let i = 0; i < quantity; i++) {
-        await fetch(`/api/carts/${cartId}/product/${productId}`, {
+        await fetch(`/api/carts/${cartId}/product/${currentProduct}`, {
           method: 'POST'
         });
       }
 
+      closeAddToCartModal();
       alert(`✅ ${quantity} producto(s) agregado(s) al carrito`);
       
       if (confirm('¿Deseas ver tu carrito?')) {
@@ -137,6 +208,12 @@
       alert('❌ Error al agregar producto: ' + error.message);
     }
   }
+
+  document.getElementById('addToCartModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeAddToCartModal();
+    }
+  });
 </script>
 
 <style>

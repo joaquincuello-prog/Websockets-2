@@ -71,7 +71,7 @@
         
         {{#if this.status}}
           {{#if (gt this.stock 0)}}
-            <button class="btn btn-success btn-block" onclick="addToCart('{{this._id}}')">
+            <button class="btn btn-success btn-block" onclick="openAddToCartModal('{{this._id}}', '{{this.title}}', {{this.price}}, {{this.stock}})">
               🛒 Agregar al Carrito
             </button>
           {{else}}
@@ -101,7 +101,6 @@
     {{/if}}
   </div>
 
-  <!-- Indicador de páginas -->
   <div style="text-align: center; margin-top: 15px; color: #666;">
     Mostrando {{products.length}} productos
   </div>
@@ -112,15 +111,94 @@
   </div>
 {{/if}}
 
+<!-- Modal para agregar al carrito -->
+<div id="addToCartModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🛒 Agregar al Carrito</h2>
+    </div>
+    <div class="modal-body">
+      <div class="modal-product-info">
+        <div class="modal-product-title" id="modalProductTitle"></div>
+        <div class="modal-product-price" id="modalProductPrice"></div>
+      </div>
+
+      <div class="quantity-selector">
+        <label>Cantidad:</label>
+        <div class="quantity-controls">
+          <button type="button" class="quantity-btn" onclick="decreaseQuantity()">-</button>
+          <input type="number" id="quantityInput" class="quantity-input" value="1" min="1" readonly>
+          <button type="button" class="quantity-btn" onclick="increaseQuantity()">+</button>
+        </div>
+      </div>
+
+      <div class="modal-total">
+        <div class="modal-total-label">Total a agregar:</div>
+        <div class="modal-total-value" id="modalTotal">$0</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="closeAddToCartModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmAddToCart()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // Función para agregar al carrito
-  async function addToCart(productId) {
+  let currentProduct = null;
+  let maxStock = 0;
+  let unitPrice = 0;
+
+  function openAddToCartModal(productId, title, price, stock) {
+    currentProduct = productId;
+    maxStock = stock;
+    unitPrice = price;
+
+    document.getElementById('modalProductTitle').textContent = title;
+    document.getElementById('modalProductPrice').textContent = `$${price}`;
+    document.getElementById('quantityInput').value = 1;
+    document.getElementById('quantityInput').max = stock;
+    updateModalTotal();
+
+    document.getElementById('addToCartModal').classList.add('active');
+  }
+
+  function closeAddToCartModal() {
+    document.getElementById('addToCartModal').classList.remove('active');
+    currentProduct = null;
+  }
+
+  function increaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    const current = parseInt(input.value);
+    if (current < maxStock) {
+      input.value = current + 1;
+      updateModalTotal();
+    }
+  }
+
+  function decreaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    const current = parseInt(input.value);
+    if (current > 1) {
+      input.value = current - 1;
+      updateModalTotal();
+    }
+  }
+
+  function updateModalTotal() {
+    const quantity = parseInt(document.getElementById('quantityInput').value);
+    const total = unitPrice * quantity;
+    document.getElementById('modalTotal').textContent = `$${total.toFixed(2)}`;
+  }
+
+  async function confirmAddToCart() {
+    const quantity = parseInt(document.getElementById('quantityInput').value);
+    
     try {
-      // Obtener o crear carrito
       let cartId = localStorage.getItem('cartId');
       
       if (!cartId) {
-        // Crear un nuevo carrito
         const createResponse = await fetch('/api/carts', {
           method: 'POST'
         });
@@ -129,25 +207,28 @@
         localStorage.setItem('cartId', cartId);
       }
 
-      // Agregar producto al carrito
-      const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
-        method: 'POST'
-      });
+      for (let i = 0; i < quantity; i++) {
+        await fetch(`/api/carts/${cartId}/product/${currentProduct}`, {
+          method: 'POST'
+        });
+      }
 
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        alert('✅ Producto agregado al carrito');
-        
-        // Preguntar si quiere ver el carrito
-        if (confirm('¿Deseas ver tu carrito?')) {
-          window.location.href = `/carts/${cartId}`;
-        }
-      } else {
-        alert('❌ Error: ' + data.message);
+      closeAddToCartModal();
+      updateCartBadge();
+      alert(`✅ ${quantity} producto(s) agregado(s) al carrito`);
+      
+      if (confirm('¿Deseas ver tu carrito?')) {
+        window.location.href = `/carts/${cartId}`;
       }
     } catch (error) {
       alert('❌ Error al agregar producto: ' + error.message);
     }
   }
+
+  // Cerrar modal al hacer clic fuera
+  document.getElementById('addToCartModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeAddToCartModal();
+    }
+  });
 </script>
