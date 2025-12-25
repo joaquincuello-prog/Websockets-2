@@ -9,6 +9,7 @@
       {{#each products}}
         <div class="cart-item">
           <!-- Imagen del producto -->
+          {{!-- Vacia la informacion-imagen --}}
           <div class="cart-item-image">
             📦
           </div>
@@ -33,11 +34,13 @@
               </div>
               <div class="cart-detail-item">
                 <span class="cart-detail-label">Cantidad:</span>
-                <span class="cart-detail-value">{{this.quantity}}</span>
+                <span class="cart-detail-value">{{this.quantity}} unidades</span>
               </div>
-              <div class="cart-detail-item">
-                <span class="cart-detail-label">Subtotal:</span>
-                <span class="cart-detail-value" style="font-size: 18px; font-weight: bold;">${{multiply this.product.price this.quantity}}</span>
+              <div class="cart-detail-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <span class="cart-detail-label" style="color: white;">Subtotal:</span>
+                <span class="cart-detail-value" style="font-size: 18px; font-weight: bold; color: white;">
+                  $<span class="subtotal-value" data-price="{{this.product.price}}" data-quantity="{{this.quantity}}"></span>
+                </span>
               </div>
             </div>
           </div>
@@ -63,12 +66,12 @@
           <div style="font-size: 32px; font-weight: bold;">{{products.length}}</div>
         </div>
         <div style="text-align: center;">
-          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Cantidad Total</div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Cantidad Total de Items</div>
           <div style="font-size: 32px; font-weight: bold;" id="totalQuantity">0</div>
         </div>
         <div style="text-align: center;">
           <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Total a Pagar</div>
-          <div style="font-size: 36px; font-weight: bold;">${{total}}</div>
+          <div style="font-size: 36px; font-weight: bold;" id="grandTotal">$0.00</div>
         </div>
       </div>
     </div>
@@ -107,25 +110,32 @@
     <div class="modal-body">
       <div class="modal-product-info">
         <div class="modal-product-title" id="editModalProductTitle"></div>
-        <div class="modal-product-price" id="editModalProductPrice"></div>
+        <div class="modal-product-price">
+          <span style="font-size: 14px; color: #666;">Precio Unitario:</span>
+          <span id="editModalProductPrice" style="font-size: 24px; color: #667eea; font-weight: bold;"></span>
+        </div>
       </div>
 
       <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
-        <strong>Cantidad actual:</strong> <span id="editModalCurrentQuantity"></span>
+        <strong>📦 Cantidad actual en el carrito:</strong> <span id="editModalCurrentQuantity" style="font-size: 18px; font-weight: bold;"></span> unidades
+      </div>
+
+      <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #28a745;">
+        <strong>📊 Stock disponible:</strong> <span id="editModalStock" style="font-size: 18px; font-weight: bold;"></span> unidades
       </div>
 
       <div class="quantity-selector">
         <label>Nueva Cantidad:</label>
         <div class="quantity-controls">
           <button type="button" class="quantity-btn" onclick="decreaseEditQuantity()">-</button>
-          <input type="number" id="editQuantityInput" class="quantity-input" value="1" min="1" readonly>
+          <input type="number" id="editQuantityInput" class="quantity-input" value="1" min="1">
           <button type="button" class="quantity-btn" onclick="increaseEditQuantity()">+</button>
         </div>
       </div>
 
       <div class="modal-total">
         <div class="modal-total-label">Nuevo Subtotal:</div>
-        <div class="modal-total-value" id="editModalTotal">$0</div>
+        <div class="modal-total-value" id="editModalTotal">$0.00</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -141,22 +151,41 @@
   let editMaxStock = 0;
   let editUnitPrice = 0;
 
-  // Calcular cantidad total al cargar
+  //  Calcular subtotales y totales al cargar
   document.addEventListener('DOMContentLoaded', function() {
-    const quantities = document.querySelectorAll('.cart-detail-value');
-    let total = 0;
-    quantities.forEach((el, index) => {
-      if (index % 5 === 3) { // El índice 3 en cada grupo corresponde a la cantidad
-        total += parseInt(el.textContent) || 0;
-      }
-    });
-    const totalElement = document.getElementById('totalQuantity');
-    if (totalElement) {
-      totalElement.textContent = total;
-    }
+    calculateTotals();
   });
 
-  // Abrir modal de edición
+  function calculateTotals() {
+    // Calcular cada subtotal
+    const subtotalElements = document.querySelectorAll('.subtotal-value');
+    let grandTotal = 0;
+    let totalQuantity = 0;
+
+    subtotalElements.forEach(el => {
+      const price = parseFloat(el.dataset.price);
+      const quantity = parseInt(el.dataset.quantity);
+      const subtotal = price * quantity;
+      
+      el.textContent = subtotal.toFixed(2);
+      grandTotal += subtotal;
+      totalQuantity += quantity;
+    });
+
+    // Actualizar el total general
+    const grandTotalElement = document.getElementById('grandTotal');
+    if (grandTotalElement) {
+      grandTotalElement.textContent = `$${grandTotal.toFixed(2)}`;
+    }
+
+    // Actualizar cantidad total
+    const totalQuantityElement = document.getElementById('totalQuantity');
+    if (totalQuantityElement) {
+      totalQuantityElement.textContent = totalQuantity;
+    }
+  }
+
+  //  Abrir modal de edición
   function openEditQuantityModal(cartId, productId, title, price, currentQuantity, stock) {
     editCartId = cartId;
     editProductId = productId;
@@ -164,8 +193,9 @@
     editUnitPrice = price;
 
     document.getElementById('editModalProductTitle').textContent = title;
-    document.getElementById('editModalProductPrice').textContent = `$${price}`;
+    document.getElementById('editModalProductPrice').textContent = `$${price.toFixed(2)}`;
     document.getElementById('editModalCurrentQuantity').textContent = currentQuantity;
+    document.getElementById('editModalStock').textContent = stock;
     document.getElementById('editQuantityInput').value = currentQuantity;
     document.getElementById('editQuantityInput').max = stock;
     updateEditModalTotal();
@@ -186,7 +216,7 @@
       input.value = current + 1;
       updateEditModalTotal();
     } else {
-      alert(`⚠️ Stock máximo disponible: ${editMaxStock}`);
+      alert(`⚠️ Stock máximo disponible: ${editMaxStock} unidades`);
     }
   }
 
@@ -199,12 +229,30 @@
     }
   }
 
+  // Permitir escribir la cantidad manualmente
+  document.addEventListener('DOMContentLoaded', function() {
+    const editInput = document.getElementById('editQuantityInput');
+    if (editInput) {
+      editInput.addEventListener('input', function() {
+        const value = parseInt(this.value) || 1;
+        if (value < 1) {
+          this.value = 1;
+        } else if (value > editMaxStock) {
+          this.value = editMaxStock;
+          alert(`⚠️ Stock máximo disponible: ${editMaxStock} unidades`);
+        }
+        updateEditModalTotal();
+      });
+    }
+  });
+
   function updateEditModalTotal() {
-    const quantity = parseInt(document.getElementById('editQuantityInput').value);
+    const quantity = parseInt(document.getElementById('editQuantityInput').value) || 1;
     const total = editUnitPrice * quantity;
     document.getElementById('editModalTotal').textContent = `$${total.toFixed(2)}`;
   }
 
+  //  Confirmar edición de cantidad
   async function confirmEditQuantity() {
     const newQuantity = parseInt(document.getElementById('editQuantityInput').value);
     
@@ -214,7 +262,7 @@
     }
 
     if (newQuantity > editMaxStock) {
-      alert(`❌ Stock máximo disponible: ${editMaxStock}`);
+      alert(`❌ Stock máximo disponible: ${editMaxStock} unidades`);
       return;
     }
 
@@ -237,11 +285,12 @@
         alert('❌ Error: ' + data.message);
       }
     } catch (error) {
+      console.error('Error:', error);
       alert('❌ Error al actualizar cantidad: ' + error.message);
     }
   }
 
-  // Función para eliminar un producto del carrito
+  //  Eliminar producto del carrito
   async function removeFromCart(cartId, productId) {
     if (!confirm('¿Estás seguro de eliminar este producto del carrito?')) {
       return;
@@ -261,11 +310,12 @@
         alert('❌ Error: ' + data.message);
       }
     } catch (error) {
+      console.error('Error:', error);
       alert('❌ Error al eliminar producto: ' + error.message);
     }
   }
 
-  // Función para vaciar el carrito
+  //  Vaciar el carrito completo
   async function clearCart(cartId) {
     if (!confirm('¿Estás seguro de vaciar todo el carrito? Esta acción no se puede deshacer.')) {
       return;
@@ -285,14 +335,16 @@
         alert('❌ Error: ' + data.message);
       }
     } catch (error) {
+      console.error('Error:', error);
       alert('❌ Error al vaciar carrito: ' + error.message);
     }
   }
 
-  // Función para proceder al pago
+  //  Proceder al pago
+  // no funcinal aún
   function checkout() {
-    const total = '{{total}}';
-    alert(`🚧 Funcionalidad de pago en desarrollo\n\n💰 Total a pagar: $${total}\n\nPronto podrás completar tu compra.`);
+    const total = document.getElementById('grandTotal').textContent;
+    alert(`🚧 Funcionalidad de pago en desarrollo\n\n💰 Total a pagar: ${total}\n\nPronto podrás completar tu compra.`);
   }
 
   // Cerrar modal al hacer clic fuera
@@ -304,6 +356,24 @@
 </script>
 
 <style>
+  .cart-detail-item {
+    padding: 10px 15px;
+  }
+
+  .cart-detail-value {
+    font-weight: bold;
+  }
+
+  .quantity-input {
+    -moz-appearance: textfield;
+  }
+
+  .quantity-input::-webkit-outer-spin-button,
+  .quantity-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   @media (max-width: 768px) {
     .cart-item {
       grid-template-columns: 1fr !important;

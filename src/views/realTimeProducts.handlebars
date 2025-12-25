@@ -1,7 +1,11 @@
-<h1>⚡ Productos en Tiempo Real</h1>
+<h1>⚡ Productos en Tiempo Real (WebSockets)</h1>
+
+<div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #667eea;">
+  <strong>🔌 Estado de conexión:</strong> <span id="connectionStatus" style="font-weight: bold; color: #28a745;">Conectado</span>
+</div>
 
 <form id="productForm">
-  <h2>➕ Agregar Nuevo Producto</h2>
+  <h2>➕ Agregar Nuevo Producto (por WebSocket)</h2>
   
   <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
     <div class="form-group">
@@ -48,9 +52,15 @@
   </div>
   
   <button type="submit" class="btn btn-success btn-block" style="margin-top: 15px; font-size: 16px; padding: 12px;">
-    ➕ Agregar Producto
+    ➕ Agregar Producto (WebSocket)
   </button>
 </form>
+
+<div style="text-align: center; margin: 20px 0;">
+  <button class="btn btn-primary" onclick="requestProducts()" style="padding: 12px 24px;">
+    🔄 Actualizar Lista
+  </button>
+</div>
 
 <div id="productList" class="product-grid" style="margin-top: 30px;">
   {{#if products.length}}
@@ -70,7 +80,7 @@
           </span>
         </div>
         <button class="btn btn-danger btn-block" onclick="deleteProduct('{{this._id}}')">
-          🗑️ Eliminar
+          🗑️ Eliminar (WebSocket)
         </button>
       </div>
     {{/each}}
@@ -83,14 +93,59 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+  // ⭐ CONEXIÓN WEBSOCKET
   const socket = io();
 
+  // Estado de conexión
+  socket.on('connect', () => {
+    console.log('✅ Conectado al servidor WebSocket');
+    document.getElementById('connectionStatus').textContent = 'Conectado';
+    document.getElementById('connectionStatus').style.color = '#28a745';
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Desconectado del servidor WebSocket');
+    document.getElementById('connectionStatus').textContent = 'Desconectado';
+    document.getElementById('connectionStatus').style.color = '#dc3545';
+  });
+
+  // ⭐ RECIBIR LISTA ACTUALIZADA DE PRODUCTOS
   socket.on('updateProducts', (products) => {
-    console.log('📡 Productos actualizados:', products);
+    console.log('📡 Lista de productos actualizada recibida:', products.length, 'productos');
     renderProducts(products);
   });
 
-  document.getElementById('productForm').addEventListener('submit', async (e) => {
+  // ⭐ CONFIRMAR CREACIÓN DE PRODUCTO
+  socket.on('productCreated', (response) => {
+    if (response.success) {
+      console.log('✅ Producto creado:', response.product);
+      alert('✅ ' + response.message);
+      document.getElementById('productForm').reset();
+    } else {
+      console.error('❌ Error:', response.message);
+      alert('❌ Error: ' + response.message);
+    }
+  });
+
+  // ⭐ CONFIRMAR ELIMINACIÓN DE PRODUCTO
+  socket.on('productDeleted', (response) => {
+    if (response.success) {
+      console.log('✅ Producto eliminado:', response.product);
+      alert('✅ ' + response.message);
+    } else {
+      console.error('❌ Error:', response.message);
+      alert('❌ Error: ' + response.message);
+    }
+  });
+
+  // ⭐ MANEJO DE ERRORES
+  socket.on('error', (error) => {
+    console.error('❌ Error del servidor:', error);
+    alert('❌ Error: ' + error.message);
+  });
+
+  // ⭐ CREAR PRODUCTO POR WEBSOCKET
+  document.getElementById('productForm').addEventListener('submit', (e) => {
     e.preventDefault();
     
     const formData = {
@@ -103,50 +158,27 @@
       status: document.getElementById('status').value === 'true'
     };
 
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        document.getElementById('productForm').reset();
-        alert('✅ Producto agregado exitosamente');
-      } else {
-        alert('❌ Error: ' + data.message);
-      }
-    } catch (error) {
-      alert('❌ Error al agregar el producto: ' + error.message);
-    }
+    console.log('📤 Enviando solicitud de creación por WebSocket:', formData);
+    socket.emit('createProduct', formData);
   });
 
-  async function deleteProduct(id) {
+  // ⭐ ELIMINAR PRODUCTO POR WEBSOCKET
+  function deleteProduct(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
       return;
     }
 
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE'
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        alert('✅ Producto eliminado exitosamente');
-      } else {
-        alert('❌ Error: ' + data.message);
-      }
-    } catch (error) {
-      alert('❌ Error al eliminar el producto: ' + error.message);
-    }
+    console.log('📤 Enviando solicitud de eliminación por WebSocket:', id);
+    socket.emit('deleteProduct', id);
   }
 
+  // ⭐ SOLICITAR LISTA ACTUALIZADA
+  function requestProducts() {
+    console.log('📤 Solicitando lista actualizada de productos');
+    socket.emit('requestProducts');
+  }
+
+  // ⭐ RENDERIZAR PRODUCTOS EN EL DOM
   function renderProducts(products) {
     const productList = document.getElementById('productList');
 
@@ -171,11 +203,13 @@
           </span>
         </div>
         <button class="btn btn-danger btn-block" onclick="deleteProduct('${product._id}')">
-          🗑️ Eliminar
+          🗑️ Eliminar (WebSocket)
         </button>
       </div>
     `).join('');
   }
+
+  console.log('🔌 Sistema de WebSockets inicializado correctamente');
 </script>
 
 <style>
