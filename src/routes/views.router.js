@@ -21,7 +21,6 @@ router.get('/products', async (req, res) => {
       query
     });
 
-    // Construir los query params para los links
     const buildQueryString = (pageNum) => {
       const params = new URLSearchParams();
       params.set('page', pageNum);
@@ -68,20 +67,42 @@ router.get('/products/:pid', async (req, res) => {
   }
 });
 
-// Vista carrito específico
+// ⭐ Vista carrito específico - ACTUALIZADA
 router.get('/carts/:cid', async (req, res) => {
   try {
     const cart = await cartManager.getCartById(req.params.cid);
     
-    // Calcular el total
-    const total = cart.products.reduce((sum, item) => {
-      return sum + (item.product.price * item.quantity);
-    }, 0);
+    // Calcular totales en el servidor
+    let total = 0;
+    let totalQuantity = 0;
+    
+    // Agregar subtotal a cada producto
+    const productsWithSubtotal = cart.products.map(item => {
+      const subtotal = item.product.price * item.quantity;
+      total += subtotal;
+      totalQuantity += item.quantity;
+      
+      return {
+        product: {
+          _id: item.product._id,
+          title: item.product.title,
+          description: item.product.description,
+          code: item.product.code,
+          price: item.product.price,
+          category: item.product.category,
+          stock: item.product.stock
+        },
+        quantity: item.quantity,
+        subtotal: subtotal.toFixed(2)
+      };
+    });
 
     res.render('cart', {
       cartId: cart._id,
-      products: cart.products,
-      total: total.toFixed(2)
+      products: productsWithSubtotal,
+      total: total.toFixed(2),
+      totalQuantity: totalQuantity,
+      productCount: cart.products.length
     });
   } catch (error) {
     res.status(404).render('error', {
