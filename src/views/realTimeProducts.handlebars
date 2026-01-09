@@ -93,7 +93,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  // ⭐ CONEXIÓN WEBSOCKET
+  //  CONEXIÓN WEBSOCKET
   const socket = io();
 
   // Estado de conexión
@@ -109,13 +109,13 @@
     document.getElementById('connectionStatus').style.color = '#dc3545';
   });
 
-  // ⭐ RECIBIR LISTA ACTUALIZADA DE PRODUCTOS
+  //  RECIBIR LISTA ACTUALIZADA DE PRODUCTOS
   socket.on('updateProducts', (products) => {
     console.log('📡 Lista de productos actualizada recibida:', products.length, 'productos');
     renderProducts(products);
   });
 
-  // ⭐ CONFIRMAR CREACIÓN DE PRODUCTO
+  //  CONFIRMAR CREACIÓN DE PRODUCTO
   socket.on('productCreated', (response) => {
     if (response.success) {
       console.log('✅ Producto creado:', response.product);
@@ -127,7 +127,7 @@
     }
   });
 
-  // ⭐ CONFIRMAR ELIMINACIÓN DE PRODUCTO
+  //  CONFIRMAR ELIMINACIÓN DE PRODUCTO
   socket.on('productDeleted', (response) => {
     if (response.success) {
       console.log('✅ Producto eliminado:', response.product);
@@ -138,13 +138,13 @@
     }
   });
 
-  // ⭐ MANEJO DE ERRORES
+  //  MANEJO DE ERRORES
   socket.on('error', (error) => {
     console.error('❌ Error del servidor:', error);
     alert('❌ Error: ' + error.message);
   });
 
-  // ⭐ CREAR PRODUCTO POR WEBSOCKET
+  //  CREAR PRODUCTO POR WEBSOCKET
   document.getElementById('productForm').addEventListener('submit', (e) => {
     e.preventDefault();
     
@@ -162,7 +162,7 @@
     socket.emit('createProduct', formData);
   });
 
-  // ⭐ ELIMINAR PRODUCTO POR WEBSOCKET
+  //  ELIMINAR PRODUCTO POR WEBSOCKET
   function deleteProduct(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
       return;
@@ -172,13 +172,13 @@
     socket.emit('deleteProduct', id);
   }
 
-  // ⭐ SOLICITAR LISTA ACTUALIZADA
+  //  SOLICITAR LISTA ACTUALIZADA
   function requestProducts() {
     console.log('📤 Solicitando lista actualizada de productos');
     socket.emit('requestProducts');
   }
 
-  // ⭐ RENDERIZAR PRODUCTOS EN EL DOM
+  //  RENDERIZAR PRODUCTOS EN EL DOM
   function renderProducts(products) {
     const productList = document.getElementById('productList');
 
